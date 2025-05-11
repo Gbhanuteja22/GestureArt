@@ -3,6 +3,7 @@ import numpy as np
 import os
 import time
 from enum import Enum
+
 class BrushType(Enum):
     STANDARD = 0
     AIRBRUSH = 1
@@ -12,6 +13,7 @@ class BrushType(Enum):
     WATERCOLOR = 5
     NEON = 6
     PIXEL = 7
+
 class CanvasEngine:
     def __init__(self, width=1280, height=720, background_color=(255, 255, 255)):
         self.width = width
@@ -36,6 +38,7 @@ class CanvasEngine:
         self.last_draw_time = 0
         self.draw_count = 0
         self.avg_draw_time = 0
+
     def draw(self, point, pressure=1.0, is_drawing=True):
         start_time = time.time()
         if point is None:
@@ -78,9 +81,25 @@ class CanvasEngine:
         self.last_draw_time = draw_time
         self.draw_count += 1
         self.avg_draw_time = ((self.draw_count - 1) * self.avg_draw_time + draw_time) / self.draw_count
+
     def _draw_standard_brush(self, canvas, point, size):
         x, y = point
-        cv2.circle(canvas, (x, y), size, self.color, -1)
+        temp = np.zeros_like(canvas)
+        cv2.circle(temp, (x, y), size, self.color, -1)
+        alpha = self.opacity * self.flow
+        y_min = max(0, y - size)
+        y_max = min(self.height, y + size)
+        x_min = max(0, x - size)
+        x_max = min(self.width, x + size)
+        if y_min < y_max and x_min < x_max:
+            canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
+                canvas[y_min:y_max, x_min:x_max],
+                1 - alpha,
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
+                0
+            )
+
     def _draw_airbrush(self, canvas, point, size):
         x, y = point
         temp = np.zeros_like(canvas)
@@ -89,19 +108,20 @@ class CanvasEngine:
             opacity = self.opacity * (3 - i) / 3
             color = tuple([int(c * opacity) for c in self.color])
             cv2.circle(temp, (x, y), int(radius), color, -1)
-        alpha = self.opacity
-        y_min = max(0, y-size*2)
-        y_max = min(self.height, y+size*2)
-        x_min = max(0, x-size*2)
-        x_max = min(self.width, x+size*2)
+        alpha = self.opacity * self.flow
+        y_min = max(0, y - size * 2)
+        y_max = min(self.height, y + size * 2)
+        x_min = max(0, x - size * 2)
+        x_max = min(self.width, x + size * 2)
         if y_min < y_max and x_min < x_max:
             canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
-                canvas[y_min:y_max, x_min:x_max], 
+                canvas[y_min:y_max, x_min:x_max],
                 1 - alpha,
-                temp[y_min:y_max, x_min:x_max], 
-                alpha, 
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
                 0
             )
+
     def _draw_calligraphy(self, canvas, point, size):
         x, y = point
         angle = 45
@@ -111,43 +131,60 @@ class CanvasEngine:
             if dx != 0 or dy != 0:
                 angle = np.degrees(np.arctan2(dy, dx))
         axes = (size, size // 3)
-        cv2.ellipse(canvas, (x, y), axes, angle, 0, 360, self.color, -1)
+        temp = np.zeros_like(canvas)
+        cv2.ellipse(temp, (x, y), axes, angle, 0, 360, self.color, -1)
+        alpha = self.opacity * self.flow
+        y_min = max(0, y - size)
+        y_max = min(self.height, y + size)
+        x_min = max(0, x - size)
+        x_max = min(self.width, x + size)
+        if y_min < y_max and x_min < x_max:
+            canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
+                canvas[y_min:y_max, x_min:x_max],
+                1 - alpha,
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
+                0
+            )
+
     def _draw_marker(self, canvas, point, size):
         x, y = point
         temp = np.zeros_like(canvas)
         cv2.circle(temp, (x, y), size, self.color, -1)
-        alpha = self.opacity * 0.7
-        y_min = max(0, y-size)
-        y_max = min(self.height, y+size)
-        x_min = max(0, x-size)
-        x_max = min(self.width, x+size)
+        alpha = self.opacity * self.flow * 0.7
+        y_min = max(0, y - size)
+        y_max = min(self.height, y + size)
+        x_min = max(0, x - size)
+        x_max = min(self.width, x + size)
         if y_min < y_max and x_min < x_max:
             canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
-                canvas[y_min:y_max, x_min:x_max], 
+                canvas[y_min:y_max, x_min:x_max],
                 1 - alpha,
-                temp[y_min:y_max, x_min:x_max], 
-                alpha, 
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
                 0
             )
+
     def _draw_pencil(self, canvas, point, size):
         x, y = point
         temp = np.zeros_like(canvas)
         cv2.circle(temp, (x, y), size, self.color, -1)
         noise = np.random.randint(0, 50, temp.shape, dtype=np.uint8)
         temp = cv2.subtract(temp, noise)
-        alpha = self.opacity
-        y_min = max(0, y-size)
-        y_max = min(self.height, y+size)
-        x_min = max(0, x-size)
-        x_max = min(self.width, x+size)
+        alpha = self.opacity * self.flow
+        y_min = max(0, y - size)
+        y_max = min(self.height, y + size)
+        x_min = max(0, x - size)
+        x_max = min(self.width, x + size)
         if y_min < y_max and x_min < x_max:
             canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
-                canvas[y_min:y_max, x_min:x_max], 
+                canvas[y_min:y_max, x_min:x_max],
                 1 - alpha,
-                temp[y_min:y_max, x_min:x_max], 
-                alpha, 
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
                 0
-            )   
+            )
+
     def _draw_watercolor(self, canvas, point, size):
         x, y = point
         temp = np.zeros_like(canvas)
@@ -157,19 +194,20 @@ class CanvasEngine:
             color_var = [int(max(0, min(255, c * (0.9 + np.random.random() * 0.2)))) for c in self.color]
             cv2.circle(temp, (x, y), int(radius), tuple(color_var), -1)
         temp = cv2.GaussianBlur(temp, (21, 21), 0)
-        alpha = self.opacity * 0.7
-        y_min = max(0, y-size*3)
-        y_max = min(self.height, y+size*3)
-        x_min = max(0, x-size*3)
-        x_max = min(self.width, x+size*3)
+        alpha = self.opacity * self.flow * 0.7
+        y_min = max(0, y - size * 3)
+        y_max = min(self.height, y + size * 3)
+        x_min = max(0, x - size * 3)
+        x_max = min(self.width, x + size * 3)
         if y_min < y_max and x_min < x_max:
             canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
-                canvas[y_min:y_max, x_min:x_max], 
+                canvas[y_min:y_max, x_min:x_max],
                 1 - alpha,
-                temp[y_min:y_max, x_min:x_max], 
-                alpha, 
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
                 0
             )
+
     def _draw_neon(self, canvas, point, size):
         x, y = point
         temp = np.zeros_like(canvas)
@@ -179,29 +217,45 @@ class CanvasEngine:
             color = tuple([min(255, c + brightness) for c in self.color])
             cv2.circle(temp, (x, y), int(radius), color, -1)
         temp = cv2.GaussianBlur(temp, (21, 21), 0)
-        alpha = self.opacity
-        y_min = max(0, y-size*3)
-        y_max = min(self.height, y+size*3)
-        x_min = max(0, x-size*3)
-        x_max = min(self.width, x+size*3)
+        alpha = self.opacity * self.flow
+        y_min = max(0, y - size * 3)
+        y_max = min(self.height, y + size * 3)
+        x_min = max(0, x - size * 3)
+        x_max = min(self.width, x + size * 3)
         if y_min < y_max and x_min < x_max:
             canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
-                canvas[y_min:y_max, x_min:x_max], 
+                canvas[y_min:y_max, x_min:x_max],
                 1 - alpha,
-                temp[y_min:y_max, x_min:x_max], 
-                alpha, 
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
                 0
             )
+
     def _draw_pixel(self, canvas, point, size):
         x, y = point
-        pixel_size = max(1, size // 3)
+        pixel_size = max(1, size)
         x_grid = (x // pixel_size) * pixel_size
         y_grid = (y // pixel_size) * pixel_size
-        cv2.rectangle(canvas, 
-                     (x_grid, y_grid), 
-                     (x_grid + pixel_size, y_grid + pixel_size), 
-                     self.color, 
-                     -1)
+        temp = np.zeros_like(canvas)
+        cv2.rectangle(temp,
+                      (x_grid, y_grid),
+                      (x_grid + pixel_size, y_grid + pixel_size),
+                      self.color,
+                      -1)
+        alpha = self.opacity * self.flow
+        y_min = max(0, y_grid)
+        y_max = min(self.height, y_grid + pixel_size)
+        x_min = max(0, x_grid)
+        x_max = min(self.width, x_grid + pixel_size)
+        if y_min < y_max and x_min < x_max:
+            canvas[y_min:y_max, x_min:x_max] = cv2.addWeighted(
+                canvas[y_min:y_max, x_min:x_max],
+                1 - alpha,
+                temp[y_min:y_max, x_min:x_max],
+                alpha,
+                0
+            )
+
     def _connect_points(self, canvas, p1, p2, size):
         x1, y1 = p1
         x2, y2 = p2
@@ -231,6 +285,7 @@ class CanvasEngine:
                 self._draw_pixel(canvas, (x, y), size)
             else:
                 self._draw_standard_brush(canvas, (x, y), size)
+
     def set_color(self, color):
         self.color = color
     def set_brush(self, brush_type):
@@ -277,6 +332,7 @@ class CanvasEngine:
         except Exception as e:
             print(f"Error saving canvas: {e}")
             return False
+
     def get_transformed_canvas(self):
         return self.layers[self.active_layer].copy()
     def get_performance_metrics(self):
@@ -285,6 +341,7 @@ class CanvasEngine:
             "avg_draw_time": self.avg_draw_time * 1000,
             "draw_count": self.draw_count
         }
+
 if __name__ == "__main__":
     canvas_engine = CanvasEngine(800, 600)
     canvas = canvas_engine.get_transformed_canvas()
