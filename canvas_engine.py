@@ -6,10 +6,10 @@ from enum import Enum
 
 class BrushType(Enum):
     STANDARD = 0
-    AIRBRUSH = 1
+    # AIRBRUSH = 1 # Removed
     CALLIGRAPHY = 2
     MARKER = 3
-    WATERCOLOR = 5
+    # WATERCOLOR = 5 # Removed
     NEON = 6 # Internally represents Eraser
     PIXEL = 7
 
@@ -76,27 +76,6 @@ class CanvasEngine:
         color_scaled = self.color
         cv2.circle(canvas, (x, y), size, color_scaled, -1)
 
-    def _draw_airbrush(self, canvas, point, size):
-        x, y = point
-        eff_alpha = 0.1 # Airbrush effect alpha
-        temp = np.zeros_like(canvas)
-        radius = size * 2 # Larger radius for spray effect
-        cv2.circle(temp, (x, y), radius, self.color, -1)
-        # Apply Gaussian blur for soft edges
-        k = max(1, radius // 2) * 2 + 1 # Ensure odd kernel size
-        temp = cv2.GaussianBlur(temp, (k, k), 0)
-        
-        y_min = max(0, y - radius)
-        y_max = min(self.height, y + radius)
-        x_min = max(0, x - radius)
-        x_max = min(self.width, x + radius)
-        if y_min < y_max and x_min < x_max:
-            region = canvas[y_min:y_max, x_min:x_max]
-            temp_region = temp[y_min:y_max, x_min:x_max]
-            mask = np.any(temp_region > [0, 0, 0], axis=2)
-            # Blend with existing canvas content
-            region[mask] = cv2.addWeighted(region[mask], 1 - eff_alpha, temp_region[mask], eff_alpha, 0)
-
     def _draw_calligraphy(self, canvas, point, size):
         x, y = point
         angle = 45
@@ -124,53 +103,6 @@ class CanvasEngine:
             temp_region = temp[y_min:y_max, x_min:x_max]
             mask = np.any(temp_region != 0, axis=2)
             region[mask] = cv2.addWeighted(region[mask], 1 - eff_alpha, temp_region[mask], eff_alpha, 0)
-
-    def _draw_watercolor(self, canvas, point, size):
-        x, y = point
-        temp = np.zeros_like(canvas)
-        # Simulate watercolor bleed/spread
-        for _ in range(3):  # Reduced from 5 to 3 for better performance
-            offset_x = int(np.random.normal(0, size * 0.3))
-            offset_y = int(np.random.normal(0, size * 0.3))
-            radius = int(size * (0.4 + np.random.random() * 0.6))
-            alpha = 0.3 + np.random.random() * 0.4 # Varying transparency
-            color_var = tuple(min(255, max(0, int(c * (0.8 + np.random.random() * 0.4)))) for c in self.color)
-            
-            # Draw semi-transparent circle with bounds checking
-            cx = max(0, min(x + offset_x, self.width - 1))
-            cy = max(0, min(y + offset_y, self.height - 1))
-            cv2.circle(temp, (cx, cy), radius, color_var, -1)
-        
-        # Soften the edges
-        k = max(1, size // 3) * 2 + 1
-        temp = cv2.GaussianBlur(temp, (k, k), 0)
-
-        # Blend onto the main canvas with proper bounds checking
-        y_min = max(0, y - size*2)
-        y_max = min(self.height, y + size*2)
-        x_min = max(0, x - size*2)
-        x_max = min(self.width, x + size*2)
-        
-        if y_min < y_max and x_min < x_max:
-            region = canvas[y_min:y_max, x_min:x_max]
-            temp_region = temp[y_min:y_max, x_min:x_max]
-            
-            # Create a mask where temp_region has non-zero values
-            mask = np.any(temp_region > [0, 0, 0], axis=2)
-            
-            # Only proceed if mask has any True values
-            if np.any(mask):
-                # Safe blending with explicit shape checking
-                try:
-                    region_masked = region[mask]
-                    temp_region_masked = temp_region[mask]
-                    
-                    if region_masked.shape == temp_region_masked.shape and region_masked.size > 0:
-                        blended = cv2.addWeighted(region_masked, 0.8, temp_region_masked, 0.5, 0)
-                        region[mask] = blended
-                except Exception as e:
-                    # Fallback to simpler drawing if blending fails
-                    cv2.circle(canvas, (x, y), size, self.color, -1)
 
     def _draw_neon(self, canvas, point, size):
         """

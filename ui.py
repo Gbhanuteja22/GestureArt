@@ -58,14 +58,16 @@ class UIManager:
                 "visible": False,
                 "rect": (50, 70, 300, 270), # Adjusted height
                 "brushes": [
-                    {"name": "Standard", "rect": (60, 100, 120, 30), "active": True},
-                    {"name": "Calligraphy", "rect": (60, 140, 120, 30), "active": False},
-                    {"name": "Watercolor", "rect": (190, 140, 120, 30), "active": False},
-                    {"name": "Eraser", "rect": (60, 180, 120, 30), "active": False},
-                    {"name": "Pixel", "rect": (190, 180, 120, 30), "active": False}
+                    # Arranged in a 2x2 grid
+                    {"name": "Standard",    "rect": (60, 100, 120, 30), "active": True},
+                    {"name": "Calligraphy", "rect": (190, 100, 120, 30), "active": False},
+                    {"name": "Eraser",      "rect": (60, 140, 120, 30), "active": False},
+                    {"name": "Pixel",       "rect": (190, 140, 120, 30), "active": False}
+                    # {"name": "Watercolor", "rect": (190, 140, 120, 30), "active": False}, # Removed
                 ],
                 "sliders": [
-                    {"name": "Size", "rect": (60, 240, 240, 20), "value": 15, "min": 1, "max": 50, "active": False},
+                    # Moved slider down to accommodate grid
+                    {"name": "Size", "rect": (60, 190, 240, 20), "value": 15, "min": 1, "max": 50, "active": False},
                 ]
             },
             UIElement.HELP: {
@@ -78,9 +80,9 @@ class UIManager:
                     "- Draw: Index finger up",
                     "- Select: Index and middle fingers up",
                     "- Clear: All fingers up",
-                    "- Undo: Thumb and index form a 'C'",
+                    # "- Undo: Thumb and index form a 'C'", # Removed
                     "- Color Pick: Index and pinky up",
-                    "- Tool Change: Ring and pinky up",
+                    # "- Tool Change: Ring and pinky up", # Removed
                     "- Save: Thumb, index, and pinky up",
                     "",
                     "Keyboard Shortcuts:",
@@ -109,7 +111,7 @@ class UIManager:
         }
         self.gesture_indicator = {
             "visible": True,
-            "rect": (width - 200, height - 50, 190, 40)
+            "rect": (10, 70, 200, 30) # Moved to top-left, below header
         }
         self.status_bar = {
             "visible": True,

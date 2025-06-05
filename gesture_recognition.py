@@ -7,12 +7,12 @@ class GestureType(Enum):
     DRAW = 1
     SELECT = 2
     CLEAR = 3
-    UNDO = 4
-    REDO = 5
+    # UNDO = 4 # Removed
+    # REDO = 5 # Removed - Note: REDO was never implemented as a gesture
     SAVE = 6
     COLOR_PICK = 7
-    TOOL_CHANGE = 8
-    TEXT_INPUT = 9
+    # TOOL_CHANGE = 8 # Removed
+    # TEXT_INPUT = 9 # Removed
 class GestureState(Enum):
     NONE = 0
     STARTED = 1
@@ -48,16 +48,10 @@ class GestureRecognizer:
             return GestureType.SELECT, 0.9
         elif sum(fingers_up) == 5:
             return GestureType.CLEAR, 0.9
-        elif fingers_up[0] == 1 and fingers_up[1] == 1 and sum(fingers_up) == 2:
-            return self._detect_undo_gesture(landmarks)
         elif fingers_up[0] == 1 and fingers_up[4] == 1 and sum(fingers_up) == 3:
             return GestureType.SAVE, 0.85
         elif fingers_up[1] == 1 and fingers_up[4] == 1 and sum(fingers_up) == 2:
             return GestureType.COLOR_PICK, 0.85
-        elif fingers_up[3] == 1 and fingers_up[4] == 1 and sum(fingers_up) == 2:
-            return GestureType.TOOL_CHANGE, 0.85
-        elif fingers_up[1] == 1 and fingers_up[2] == 1 and fingers_up[3] == 1 and sum(fingers_up) == 3:
-            return GestureType.TEXT_INPUT, 0.85
         return GestureType.NONE, 0.0
     def _detect_undo_gesture(self, landmarks):
         if not landmarks or len(landmarks) < 21:
