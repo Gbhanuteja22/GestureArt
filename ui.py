@@ -78,10 +78,9 @@ class UIManager:
                     "",
                     "Gestures:",
                     "- Draw: Index finger up",
-                    "- Select: Index and middle fingers up",
-                    "- Clear: All fingers up",
-                    # "- Undo: Thumb and index form a 'C'", # Removed
-                    "- Color Pick: Index and pinky up",
+                    "- Select: Index and middle fingers up"                    "- Clear: All fingers up",
+                    # "- Undo: Thumb and index form a \'C\'", # Removed
+                    # "- Color Pick: Index and pinky up", # Removed
                     # "- Tool Change: Ring and pinky up", # Removed
                     "- Save: Thumb, index, and pinky up",
                     "",
@@ -111,7 +110,7 @@ class UIManager:
         }
         self.gesture_indicator = {
             "visible": True,
-            "rect": (10, 70, 200, 30) # Moved to top-left, below header
+            "rect": (self.width - 375 - 10, 70, 375, 30) # Moved to top-right, below header
         }
         self.status_bar = {
             "visible": True,
@@ -338,8 +337,8 @@ class UIManager:
             cv2.rectangle(result, (rect[0], rect[1]), 
                          (rect[0] + rect[2], rect[1] + rect[3]), 
                          (100, 100, 100), 2)
-            cv2.putText(result, f"Gesture: {gesture_info}", (rect[0] + 10, rect[1] + 25), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(result, f"Gesture: {gesture_info}", (rect[0] + 10, rect[1] + 20), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1, cv2.LINE_AA) # Hacker green text
         if self.status_bar["visible"]:
             rect = self.status_bar["rect"]
             cv2.rectangle(result, (rect[0], rect[1]), 

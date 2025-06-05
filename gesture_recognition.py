@@ -10,7 +10,7 @@ class GestureType(Enum):
     # UNDO = 4 # Removed
     # REDO = 5 # Removed - Note: REDO was never implemented as a gesture
     SAVE = 6
-    COLOR_PICK = 7
+    # COLOR_PICK = 7 # Removed
     # TOOL_CHANGE = 8 # Removed
     # TEXT_INPUT = 9 # Removed
 class GestureState(Enum):
@@ -50,26 +50,6 @@ class GestureRecognizer:
             return GestureType.CLEAR, 0.9
         elif fingers_up[0] == 1 and fingers_up[4] == 1 and sum(fingers_up) == 3:
             return GestureType.SAVE, 0.85
-        elif fingers_up[1] == 1 and fingers_up[4] == 1 and sum(fingers_up) == 2:
-            return GestureType.COLOR_PICK, 0.85
-        return GestureType.NONE, 0.0
-    def _detect_undo_gesture(self, landmarks):
-        if not landmarks or len(landmarks) < 21:
-            return GestureType.NONE, 0.0
-        thumb_tip = landmarks[4]
-        index_tip = landmarks[8]
-        distance = self._calculate_distance(
-            (thumb_tip[1], thumb_tip[2]),
-            (index_tip[1], index_tip[2])
-        )
-        thumb_mcp = landmarks[2]
-        index_pip = landmarks[6]
-        hand_size = self._calculate_distance(
-            (thumb_mcp[1], thumb_mcp[2]),
-            (index_pip[1], index_pip[2])
-        )
-        if distance < hand_size * 0.3:
-            return GestureType.UNDO, 0.85
         return GestureType.NONE, 0.0
     def _calculate_distance(self, p1, p2):
         return np.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
