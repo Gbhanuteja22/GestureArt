@@ -56,21 +56,16 @@ class UIManager:
             },
             UIElement.BRUSH_SELECTOR: {
                 "visible": False,
-                "rect": (50, 70, 300, 300),
+                "rect": (50, 70, 300, 270), # Adjusted height
                 "brushes": [
-                    {"name": "Standard", "rect": (60, 80, 120, 30), "active": True},
-                    {"name": "Airbrush", "rect": (190, 80, 120, 30), "active": False},
-                    {"name": "Calligraphy", "rect": (60, 120, 120, 30), "active": False},
-                    {"name": "Marker", "rect": (190, 120, 120, 30), "active": False},
-                    {"name": "Pencil", "rect": (60, 160, 120, 30), "active": False},
-                    {"name": "Watercolor", "rect": (190, 160, 120, 30), "active": False},
-                    {"name": "Neon", "rect": (60, 200, 120, 30), "active": False},
-                    {"name": "Pixel", "rect": (190, 200, 120, 30), "active": False}
+                    {"name": "Standard", "rect": (60, 100, 120, 30), "active": True},
+                    {"name": "Calligraphy", "rect": (60, 140, 120, 30), "active": False},
+                    {"name": "Watercolor", "rect": (190, 140, 120, 30), "active": False},
+                    {"name": "Eraser", "rect": (60, 180, 120, 30), "active": False},
+                    {"name": "Pixel", "rect": (190, 180, 120, 30), "active": False}
                 ],
                 "sliders": [
                     {"name": "Size", "rect": (60, 240, 240, 20), "value": 15, "min": 1, "max": 50, "active": False},
-                    {"name": "Opacity", "rect": (60, 270, 240, 20), "value": 100, "min": 0, "max": 100, "active": False},
-                    {"name": "Flow", "rect": (60, 300, 240, 20), "value": 100, "min": 0, "max": 100, "active": False}
                 ]
             },
             UIElement.HELP: {
@@ -225,7 +220,7 @@ class UIManager:
             cv2.rectangle(result, (rect[0], rect[1]), 
                          (rect[0] + rect[2], rect[1] + rect[3]), 
                          (100, 100, 100), 2)
-            cv2.putText(result, "Brush Selector", (rect[0] + 10, rect[1] + 25), 
+            cv2.putText(result, "Brush Selector", (rect[0] + 10, rect[1] + 20), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 1, cv2.LINE_AA)
             for brush in brush_selector["brushes"]:
                 brush_rect = brush["rect"]
@@ -278,14 +273,14 @@ class UIManager:
             line_height = 25
             for i, line in enumerate(help_element["content"]):
                 if i == 0:
-                    cv2.putText(result, line, (rect[0] + 20, rect[1] + 30), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
+                    cv2.putText(result, line, (rect[0] + 10, rect[1] + 30), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 1, cv2.LINE_AA)
                 else:
-                    cv2.putText(result, line, (rect[0] + 20, rect[1] + 30 + i * line_height), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1, cv2.LINE_AA)
+                    cv2.putText(result, line, (rect[0] + 10, rect[1] + 30 + i * line_height), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
         if self.elements[UIElement.SETTINGS]["visible"]:
-            settings_element = self.elements[UIElement.SETTINGS]
-            rect = settings_element["rect"]
+            settings = self.elements[UIElement.SETTINGS]
+            rect = settings["rect"]
             overlay = result.copy()
             cv2.rectangle(overlay, (rect[0], rect[1]), 
                          (rect[0] + rect[2], rect[1] + rect[3]), 
@@ -295,9 +290,9 @@ class UIManager:
                          (100, 100, 100), 2)
             alpha = 0.8
             result = cv2.addWeighted(overlay, alpha, result, 1 - alpha, 0)
-            cv2.putText(result, "Settings", (rect[0] + 20, rect[1] + 30), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
-            for setting in settings_element["settings"]:
+            cv2.putText(result, "Settings", (rect[0] + 10, rect[1] + 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 1, cv2.LINE_AA)
+            for setting in settings["settings"]:
                 setting_rect = setting["rect"]
                 cv2.rectangle(result, (setting_rect[0], setting_rect[1]), 
                              (setting_rect[0] + setting_rect[2], setting_rect[1] + setting_rect[3]), 
@@ -312,12 +307,12 @@ class UIManager:
                 cv2.rectangle(result, (setting_rect[0], setting_rect[1]), 
                              (setting_rect[0] + setting_rect[2], setting_rect[1] + setting_rect[3]), 
                              border_color, 1)
-                cv2.putText(result, f"{setting['name']}: {setting['value']:.1f}", 
+                cv2.putText(result, f"{setting['name']}: {setting['value']:.2f}", 
                            (setting_rect[0], setting_rect[1] - 5), 
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            for button in settings_element["buttons"]:
+            for button in settings["buttons"]:
                 button_rect = button["rect"]
-                button_color = (200, 200, 200)
+                button_color = (150, 150, 150)
                 text_color = (0, 0, 0)
                 if button["active"]:
                     button_color = (100, 100, 255)
@@ -327,7 +322,7 @@ class UIManager:
                              button_color, -1)
                 cv2.rectangle(result, (button_rect[0], button_rect[1]), 
                              (button_rect[0] + button_rect[2], button_rect[1] + button_rect[3]), 
-                             (100, 100, 100), 1)
+                             (50, 50, 50), 1)
                 text_size = cv2.getTextSize(button["name"], cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)[0]
                 text_x = button_rect[0] + (button_rect[2] - text_size[0]) // 2
                 text_y = button_rect[1] + (button_rect[3] + text_size[1]) // 2
@@ -337,16 +332,12 @@ class UIManager:
             rect = self.gesture_indicator["rect"]
             cv2.rectangle(result, (rect[0], rect[1]), 
                          (rect[0] + rect[2], rect[1] + rect[3]), 
-                         (240, 240, 240), -1)
+                         (200, 200, 200), -1)
             cv2.rectangle(result, (rect[0], rect[1]), 
                          (rect[0] + rect[2], rect[1] + rect[3]), 
-                         (100, 100, 100), 1)
-            gesture_name = gesture_info["gesture"].name if "gesture" in gesture_info else "NONE"
-            gesture_state = gesture_info["state"].name if "state" in gesture_info else "NONE"
-            cv2.putText(result, f"Gesture: {gesture_name}", (rect[0] + 10, rect[1] + 15), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(result, f"State: {gesture_state}", (rect[0] + 10, rect[1] + 35), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                         (100, 100, 100), 2)
+            cv2.putText(result, f"Gesture: {gesture_info}", (rect[0] + 10, rect[1] + 25), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1, cv2.LINE_AA)
         if self.status_bar["visible"]:
             rect = self.status_bar["rect"]
             cv2.rectangle(result, (rect[0], rect[1]), 
@@ -354,221 +345,149 @@ class UIManager:
                          (200, 200, 200), -1)
             cv2.rectangle(result, (rect[0], rect[1]), 
                          (rect[0] + rect[2], rect[1] + rect[3]), 
-                         (100, 100, 100), 1)
+                         (100, 100, 100), 2)
             cv2.putText(result, self.status_bar["text"], (rect[0] + 10, rect[1] + 20), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-        if landmarks:
-            self._highlight_interactive_elements(result, landmarks)
         end_time = time.time()
-        self.last_render_time = end_time - start_time
+        render_time = end_time - start_time
+        self.last_render_time = render_time
         self.render_count += 1
-        self.avg_render_time = ((self.render_count - 1) * self.avg_render_time + self.last_render_time) / self.render_count
+        self.avg_render_time = ((self.render_count - 1) * self.avg_render_time + render_time) / self.render_count
         return result
-    
-    def _highlight_interactive_elements(self, frame, landmarks):
-        index_tip = None
-        for lm in landmarks:
-            if lm[0] == 8: 
-                index_tip = (lm[1], lm[2])
-                break
-        
-        if not index_tip:
-            return
-        if self.elements[UIElement.HEADER]["visible"]:
-            for button in self.elements[UIElement.HEADER]["buttons"]:
-                if self._is_point_in_rect(index_tip, button["rect"]):
-                    cv2.rectangle(frame, (button["rect"][0], button["rect"][1]), 
-                                 (button["rect"][0] + button["rect"][2], button["rect"][1] + button["rect"][3]), 
-                                 (0, 255, 0), 2)
-        if self.elements[UIElement.COLOR_PICKER]["visible"]:
-            color_picker = self.elements[UIElement.COLOR_PICKER]
-            for color_item in color_picker["colors"]:
-                if self._is_point_in_rect(index_tip, color_item["rect"]):
-                    cv2.rectangle(frame, (color_item["rect"][0], color_item["rect"][1]), 
-                                 (color_item["rect"][0] + color_item["rect"][2], color_item["rect"][1] + color_item["rect"][3]), 
-                                 (0, 255, 0), 2)
-            for slider in color_picker["sliders"]:
-                if self._is_point_in_rect(index_tip, slider["rect"]):
-                    cv2.rectangle(frame, (slider["rect"][0], slider["rect"][1]), 
-                                 (slider["rect"][0] + slider["rect"][2], slider["rect"][1] + slider["rect"][3]), 
-                                 (0, 255, 0), 2)
-        if self.elements[UIElement.BRUSH_SELECTOR]["visible"]:
-            brush_selector = self.elements[UIElement.BRUSH_SELECTOR]
-            for brush in brush_selector["brushes"]:
-                if self._is_point_in_rect(index_tip, brush["rect"]):
-                    cv2.rectangle(frame, (brush["rect"][0], brush["rect"][1]), 
-                                 (brush["rect"][0] + brush["rect"][2], brush["rect"][1] + brush["rect"][3]), 
-                                 (0, 255, 0), 2)
-            for slider in brush_selector["sliders"]:
-                if self._is_point_in_rect(index_tip, slider["rect"]):
-                    cv2.rectangle(frame, (slider["rect"][0], slider["rect"][1]), 
-                                 (slider["rect"][0] + slider["rect"][2], slider["rect"][1] + slider["rect"][3]), 
-                                 (0, 255, 0), 2)
-    def handle_interaction(self, point, is_selecting=False):
+    def handle_interaction(self, point, is_clicking):
         if point is None:
-            return {"type": "none"}
-        self.last_interaction_time = time.time()
+            return None
+        x, y = point
+        result = None
+        self.hover_element = None
         if self.elements[UIElement.HEADER]["visible"]:
-            for button in self.elements[UIElement.HEADER]["buttons"]:
-                if self._is_point_in_rect(point, button["rect"]):
-                    if is_selecting:
-                        if button["name"] == "Clear":
-                            return {"type": "clear"}
-                        elif button["name"] == "Undo":
-                            return {"type": "undo"}
-                        elif button["name"] == "Redo":
-                            return {"type": "redo"}
-                        elif button["name"] == "Color":
-                            self.elements[UIElement.COLOR_PICKER]["visible"] = not self.elements[UIElement.COLOR_PICKER]["visible"]
-                            if self.elements[UIElement.COLOR_PICKER]["visible"]:
+            header = self.elements[UIElement.HEADER]
+            header_rect = header["rect"]
+            if self._is_point_in_rect(x, y, header_rect):
+                for button in header["buttons"]:
+                    button_rect = button["rect"]
+                    if self._is_point_in_rect(x, y, button_rect):
+                        self.hover_element = button
+                        button["active"] = is_clicking
+                        if is_clicking:
+                            self.last_interaction_time = time.time()
+                            if button["name"] == "Clear":
+                                result = {"type": "clear"}
+                            elif button["name"] == "Undo":
+                                result = {"type": "undo"}
+                            elif button["name"] == "Redo":
+                                result = {"type": "redo"}
+                            elif button["name"] == "Color":
+                                self.elements[UIElement.COLOR_PICKER]["visible"] = not self.elements[UIElement.COLOR_PICKER]["visible"]
                                 self.elements[UIElement.BRUSH_SELECTOR]["visible"] = False
-                            return {"type": "toggle_color_picker"}
-                        elif button["name"] == "Brush":
-                            self.elements[UIElement.BRUSH_SELECTOR]["visible"] = not self.elements[UIElement.BRUSH_SELECTOR]["visible"]
-                            if self.elements[UIElement.BRUSH_SELECTOR]["visible"]:
+                            elif button["name"] == "Brush":
+                                self.elements[UIElement.BRUSH_SELECTOR]["visible"] = not self.elements[UIElement.BRUSH_SELECTOR]["visible"]
                                 self.elements[UIElement.COLOR_PICKER]["visible"] = False
-                            return {"type": "toggle_brush_selector"}
-                        elif button["name"] == "Save":
-                            return {"type": "save"}
-                        elif button["name"] == "Help":
-                            self.elements[UIElement.HELP]["visible"] = not self.elements[UIElement.HELP]["visible"]
-                            return {"type": "toggle_help"}
+                            elif button["name"] == "Save":
+                                result = {"type": "save"}
+                            elif button["name"] == "Help":
+                                self.elements[UIElement.HELP]["visible"] = not self.elements[UIElement.HELP]["visible"]
                     else:
-                        return {"type": "hover", "element": "button", "name": button["name"]}
+                        button["active"] = False
         if self.elements[UIElement.COLOR_PICKER]["visible"]:
             color_picker = self.elements[UIElement.COLOR_PICKER]
-            if self._is_point_in_rect(point, color_picker["rect"]):
+            rect = color_picker["rect"]
+            if self._is_point_in_rect(x, y, rect):
+                self.last_interaction_time = time.time()
                 for color_item in color_picker["colors"]:
-                    if self._is_point_in_rect(point, color_item["rect"]):
-                        if is_selecting:
+                    color_rect = color_item["rect"]
+                    if self._is_point_in_rect(x, y, color_rect):
+                        self.hover_element = color_item
+                        if is_clicking:
+                            for c in color_picker["colors"]:
+                                c["active"] = False
+                            color_item["active"] = True
                             color_picker["current_color"] = color_item["color"]
                             color_picker["sliders"][0]["value"] = color_item["color"][2]
                             color_picker["sliders"][1]["value"] = color_item["color"][1]
                             color_picker["sliders"][2]["value"] = color_item["color"][0]
-                            return {"type": "color_selected", "color": color_item["color"]}
-                        else:
-                            return {"type": "hover", "element": "color", "color": color_item["color"]}
+                            result = {"type": "color_selected", "color": color_item["color"]}
                 for slider in color_picker["sliders"]:
-                    if self._is_point_in_rect(point, slider["rect"]):
-                        if is_selecting:
-                            x_rel = point[0] - slider["rect"][0]
-                            slider["value"] = int(x_rel * 255 / slider["rect"][2])
-                            slider["value"] = max(0, min(255, slider["value"]))
-                            r = color_picker["sliders"][0]["value"]
-                            g = color_picker["sliders"][1]["value"]
-                            b = color_picker["sliders"][2]["value"]
-                            color_picker["current_color"] = (b, g, r)
-                            return {"type": "slider_changed", "name": slider["name"], "value": slider["value"]}
-                        else:
-                            return {"type": "hover", "element": "slider", "name": slider["name"]}
-                return {"type": "color_picker_interaction"}
+                    slider_rect = slider["rect"]
+                    if self._is_point_in_rect(x, y, slider_rect):
+                        self.hover_element = slider
+                        if is_clicking:
+                            slider["active"] = True
+                            value = (x - slider_rect[0]) / slider_rect[2] * 255
+                            value = max(0, min(255, value))
+                            slider["value"] = int(value)
+                            if slider["name"] == "R":
+                                color_picker["current_color"] = (color_picker["current_color"][0], color_picker["current_color"][1], int(value))
+                            elif slider["name"] == "G":
+                                color_picker["current_color"] = (color_picker["current_color"][0], int(value), color_picker["current_color"][2])
+                            elif slider["name"] == "B":
+                                color_picker["current_color"] = (int(value), color_picker["current_color"][1], color_picker["current_color"][2])
+                            result = {"type": "slider_changed", "name": slider["name"], "value": slider["value"]}
+                    else:
+                        slider["active"] = False
         if self.elements[UIElement.BRUSH_SELECTOR]["visible"]:
             brush_selector = self.elements[UIElement.BRUSH_SELECTOR]
-            if self._is_point_in_rect(point, brush_selector["rect"]):
+            rect = brush_selector["rect"]
+            if self._is_point_in_rect(x, y, rect):
+                self.last_interaction_time = time.time()
                 for brush in brush_selector["brushes"]:
-                    if self._is_point_in_rect(point, brush["rect"]):
-                        if is_selecting:
+                    brush_rect = brush["rect"]
+                    if self._is_point_in_rect(x, y, brush_rect):
+                        self.hover_element = brush
+                        if is_clicking:
                             for b in brush_selector["brushes"]:
                                 b["active"] = False
                             brush["active"] = True
-                            return {"type": "brush_selected", "name": brush["name"]}
-                        else:
-                            return {"type": "hover", "element": "brush", "name": brush["name"]}
+                            result = {"type": "brush_selected", "name": brush["name"]}
                 for slider in brush_selector["sliders"]:
-                    if self._is_point_in_rect(point, slider["rect"]):
-                        if is_selecting:
-                            x_rel = point[0] - slider["rect"][0]
-                            value_range = slider["max"] - slider["min"]
-                            slider["value"] = int(slider["min"] + x_rel * value_range / slider["rect"][2])
-                            slider["value"] = max(slider["min"], min(slider["max"], slider["value"]))
-                            return {"type": "brush_property_changed", "name": slider["name"], "value": slider["value"]}
-                        else:
-                            return {"type": "hover", "element": "slider", "name": slider["name"]}
-                return {"type": "brush_selector_interaction"}
+                    slider_rect = slider["rect"]
+                    if self._is_point_in_rect(x, y, slider_rect):
+                        self.hover_element = slider
+                        if is_clicking:
+                            slider["active"] = True
+                            value = (x - slider_rect[0]) / slider_rect[2] * (slider["max"] - slider["min"]) + slider["min"]
+                            value = max(slider["min"], min(slider["max"], value))
+                            slider["value"] = int(value)
+                            result = {"type": "brush_property_changed", "name": slider["name"].lower(), "value": slider["value"]}
+                    else:
+                        slider["active"] = False
         if self.elements[UIElement.SETTINGS]["visible"]:
-            settings_element = self.elements[UIElement.SETTINGS]
-            if self._is_point_in_rect(point, settings_element["rect"]):
-                for setting in settings_element["settings"]:
-                    if self._is_point_in_rect(point, setting["rect"]):
-                        if is_selecting:
-                            x_rel = point[0] - setting["rect"][0]
-                            value_range = setting["max"] - setting["min"]
-                            setting["value"] = setting["min"] + x_rel * value_range / setting["rect"][2]
-                            setting["value"] = max(setting["min"], min(setting["max"], setting["value"]))
-                            return {"type": "setting_changed", "name": setting["name"], "value": setting["value"]}
-                        else:
-                            return {"type": "hover", "element": "setting", "name": setting["name"]}
-                for button in settings_element["buttons"]:
-                    if self._is_point_in_rect(point, button["rect"]):
-                        if is_selecting:
+            settings = self.elements[UIElement.SETTINGS]
+            rect = settings["rect"]
+            if self._is_point_in_rect(x, y, rect):
+                self.last_interaction_time = time.time()
+                for setting in settings["settings"]:
+                    setting_rect = setting["rect"]
+                    if self._is_point_in_rect(x, y, setting_rect):
+                        self.hover_element = setting
+                        if is_clicking:
+                            setting["active"] = True
+                            value = (x - setting_rect[0]) / setting_rect[2] * (setting["max"] - setting["min"]) + setting["min"]
+                            value = max(setting["min"], min(setting["max"], value))
+                            setting["value"] = value
+                            result = {"type": "setting_changed", "name": setting["name"], "value": setting["value"]}
+                    else:
+                        setting["active"] = False
+                for button in settings["buttons"]:
+                    button_rect = button["rect"]
+                    if self._is_point_in_rect(x, y, button_rect):
+                        self.hover_element = button
+                        button["active"] = is_clicking
+                        if is_clicking:
                             if button["name"] == "Apply":
-                                return {"type": "apply_settings"}
+                                result = {"type": "settings_apply"}
                             elif button["name"] == "Cancel":
                                 self.elements[UIElement.SETTINGS]["visible"] = False
-                                return {"type": "cancel_settings"}
-                        else:
-                            return {"type": "hover", "element": "button", "name": button["name"]}
-                return {"type": "settings_interaction"}
-        return {"type": "canvas"}
-    def _is_point_in_rect(self, point, rect):
-        x, y = point
-        rx, ry, rw, rh = rect
-        return rx <= x <= rx + rw and ry <= y <= ry + rh
-    def toggle_help(self):
-        self.elements[UIElement.HELP]["visible"] = not self.elements[UIElement.HELP]["visible"]
-        return self.elements[UIElement.HELP]["visible"]
+                    else:
+                        button["active"] = False
+        return result
+    def _is_point_in_rect(self, x, y, rect):
+        return rect[0] <= x <= rect[0] + rect[2] and rect[1] <= y <= rect[1] + rect[3]
     def set_status(self, text):
         self.status_bar["text"] = text
-    def get_active_brush(self):
-        for brush in self.elements[UIElement.BRUSH_SELECTOR]["brushes"]:
-            if brush["active"]:
-                return brush["name"]
-        return "Standard"
-    def get_brush_properties(self):
-        brush_selector = self.elements[UIElement.BRUSH_SELECTOR]
-        properties = {}
-        for slider in brush_selector["sliders"]:
-            properties[slider["name"].lower()] = slider["value"]
-        return properties
-    def get_current_color(self):
-        return self.elements[UIElement.COLOR_PICKER]["current_color"]
     def get_performance_metrics(self):
         return {
             "last_render_time": self.last_render_time * 1000,
-            "avg_render_time": self.avg_render_time * 1000,  
+            "avg_render_time": self.avg_render_time * 1000,
             "render_count": self.render_count
         }
-if __name__ == "__main__":
-    cv2.namedWindow("UI Test", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("UI Test", 1280, 720)
-    ui_manager = UIManager(1280, 720)
-    canvas = np.ones((720, 1280, 3), dtype=np.uint8) * 255
-    mouse_x, mouse_y = 0, 0
-    mouse_down = False
-    def mouse_callback(event, x, y, flags, param):
-        global mouse_x, mouse_y, mouse_down
-        mouse_x, mouse_y = x, y
-        if event == cv2.EVENT_LBUTTONDOWN:
-            mouse_down = True
-            interaction = ui_manager.handle_interaction((x, y), True)
-            print(f"Interaction: {interaction}")
-        elif event == cv2.EVENT_LBUTTONUP:
-            mouse_down = False
-    cv2.setMouseCallback("UI Test", mouse_callback)
-    while True:
-        img = canvas.copy()
-        ui_manager.handle_interaction((mouse_x, mouse_y), False)
-        result = ui_manager.render(img)
-        cv2.imshow("UI Test", result)
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-        elif key == ord('h'):
-            ui_manager.toggle_help()
-        elif key == ord('c'):
-            ui_manager.elements[UIElement.COLOR_PICKER]["visible"] = not ui_manager.elements[UIElement.COLOR_PICKER]["visible"]
-        elif key == ord('b'):
-            ui_manager.elements[UIElement.BRUSH_SELECTOR]["visible"] = not ui_manager.elements[UIElement.BRUSH_SELECTOR]["visible"]
-        elif key == ord('s'):
-            ui_manager.elements[UIElement.SETTINGS]["visible"] = not ui_manager.elements[UIElement.SETTINGS]["visible"]
-    cv2.destroyAllWindows()

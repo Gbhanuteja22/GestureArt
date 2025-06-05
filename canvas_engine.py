@@ -9,9 +9,8 @@ class BrushType(Enum):
     AIRBRUSH = 1
     CALLIGRAPHY = 2
     MARKER = 3
-    PENCIL = 4
     WATERCOLOR = 5
-    NEON = 6
+    NEON = 6 # Internally represents Eraser
     PIXEL = 7
 
 class CanvasEngine:
@@ -25,16 +24,15 @@ class CanvasEngine:
         self.color = (0, 0, 0)
         self.brush_type = BrushType.STANDARD
         self.brush_size = 15
-        self.opacity = 1.0
-        self.flow = 1.0
         self.hardness = 0.5
         self.prev_point = None
         self.history = []
-        self.redo_stack = []
+        self.history_index = -1 # Points to the current state in history
         self.max_history_size = 20
-        self.layers = [self.canvas.copy()]
-        self.active_layer = 0
-        self._save_state()
+        self.layers = [np.ones((height, width, 3), dtype=np.uint8)] # Start with one layer
+        self.layers[0][:] = background_color
+        self.active_layer = 0 # Initialize active_layer BEFORE using it
+        self._add_history_state(self.layers[self.active_layer].copy()) # Save initial state
         self.last_draw_time = 0
         self.draw_count = 0
         self.avg_draw_time = 0
@@ -42,8 +40,12 @@ class CanvasEngine:
     def draw(self, point, pressure=1.0, is_drawing=True):
         start_time = time.time()
         if point is None:
+            # Save state only when the drawing stroke ends (is_drawing is False)
+            if self.prev_point is not None and not is_drawing: # Check if there was a stroke
+                 self._add_history_state(self.layers[self.active_layer].copy())
             self.prev_point = None
             return
+        
         x, y = point
         x = max(0, min(x, self.width - 1))
         y = max(0, min(y, self.height - 1))
@@ -52,33 +54,17 @@ class CanvasEngine:
             effective_size = 1
 
         canvas = self.layers[self.active_layer]
-        if self.brush_type == BrushType.STANDARD:
-            self._draw_standard_brush(canvas, (x, y), effective_size)
-        elif self.brush_type == BrushType.AIRBRUSH:
-            self._draw_airbrush(canvas, (x, y), effective_size)
-        elif self.brush_type == BrushType.CALLIGRAPHY:
-            self._draw_calligraphy(canvas, (x, y), effective_size)
-        elif self.brush_type == BrushType.MARKER:
-            self._draw_marker(canvas, (x, y), effective_size)
-        elif self.brush_type == BrushType.PENCIL:
-            self._draw_pencil(canvas, (x, y), effective_size)
-        elif self.brush_type == BrushType.WATERCOLOR:
-            self._draw_watercolor(canvas, (x, y), effective_size)
-        elif self.brush_type == BrushType.NEON:
-            self._draw_neon(canvas, (x, y), effective_size)
-        elif self.brush_type == BrushType.PIXEL:
-            self._draw_pixel(canvas, (x, y), effective_size)
-        else:
-            self._draw_standard_brush(canvas, (x, y), effective_size)
+        # Dynamically call the correct drawing method based on brush_type
+        draw_method_name = f'_draw_{self.brush_type.name.lower()}'
+        draw_method = getattr(self, draw_method_name, self._draw_standard_brush)
+        draw_method(canvas, (x, y), effective_size)
 
         if self.prev_point is not None and is_drawing:
             self._connect_points(canvas, self.prev_point, (x, y), effective_size)
 
         if is_drawing:
             self.prev_point = (x, y)
-        else:
-            self.prev_point = None
-            self._save_state()
+            
         end_time = time.time()
         draw_time = end_time - start_time
         self.last_draw_time = draw_time
@@ -87,29 +73,29 @@ class CanvasEngine:
 
     def _draw_standard_brush(self, canvas, point, size):
         x, y = point
-        eff = self.opacity * self.flow
-        color_scaled = tuple(min(255, int(c * eff)) for c in self.color)
+        color_scaled = self.color
         cv2.circle(canvas, (x, y), size, color_scaled, -1)
 
     def _draw_airbrush(self, canvas, point, size):
         x, y = point
-        eff_alpha = self.opacity * self.flow
+        eff_alpha = 0.1 # Airbrush effect alpha
         temp = np.zeros_like(canvas)
-        for i in range(3):
-            radius = int(size * (i + 1) / 2)
-            factor = (3 - i) / 3.0
-            color_scaled = tuple(min(255, int(c * self.opacity * factor)) for c in self.color)
-            cv2.circle(temp, (x, y), radius, color_scaled, -1)
-        y_min = max(0, y - size*2)
-        y_max = min(self.height, y + size*2)
-        x_min = max(0, x - size*2)
-        x_max = min(self.width, x + size*2)
+        radius = size * 2 # Larger radius for spray effect
+        cv2.circle(temp, (x, y), radius, self.color, -1)
+        # Apply Gaussian blur for soft edges
+        k = max(1, radius // 2) * 2 + 1 # Ensure odd kernel size
+        temp = cv2.GaussianBlur(temp, (k, k), 0)
+        
+        y_min = max(0, y - radius)
+        y_max = min(self.height, y + radius)
+        x_min = max(0, x - radius)
+        x_max = min(self.width, x + radius)
         if y_min < y_max and x_min < x_max:
             region = canvas[y_min:y_max, x_min:x_max]
             temp_region = temp[y_min:y_max, x_min:x_max]
-            blended = cv2.addWeighted(region, 1 - eff_alpha, temp_region, eff_alpha, 0)
-            mask = np.any(temp_region != 0, axis=2)
-            region[mask] = blended[mask]
+            mask = np.any(temp_region > [0, 0, 0], axis=2)
+            # Blend with existing canvas content
+            region[mask] = cv2.addWeighted(region[mask], 1 - eff_alpha, temp_region[mask], eff_alpha, 0)
 
     def _draw_calligraphy(self, canvas, point, size):
         x, y = point
@@ -120,12 +106,13 @@ class CanvasEngine:
             if dx != 0 or dy != 0:
                 angle = np.degrees(np.arctan2(dy, dx))
         axes = (size, size // 3)
-        eff_color = tuple(min(255, int(c * self.opacity * self.flow)) for c in self.color)
+        eff_color = self.color
         cv2.ellipse(canvas, (x, y), axes, angle, 0, 360, eff_color, -1)
 
     def _draw_marker(self, canvas, point, size):
         x, y = point
-        eff_alpha = self.opacity * self.flow * 0.7
+        # Marker effect: slightly transparent overlay
+        eff_alpha = 0.7 
         temp = np.zeros_like(canvas)
         cv2.circle(temp, (x, y), size, self.color, -1)
         y_min = max(0, y - size)
@@ -135,177 +122,152 @@ class CanvasEngine:
         if y_min < y_max and x_min < x_max:
             region = canvas[y_min:y_max, x_min:x_max]
             temp_region = temp[y_min:y_max, x_min:x_max]
-            blended = cv2.addWeighted(region, 1 - eff_alpha, temp_region, eff_alpha, 0)
             mask = np.any(temp_region != 0, axis=2)
-            region[mask] = blended[mask]
-
-    def _draw_pencil(self, canvas, point, size):
-        x, y = point
-        eff_alpha = self.opacity * self.flow
-        temp = np.zeros_like(canvas)
-        cv2.circle(temp, (x, y), size, self.color, -1)
-        max_noise = int(50 * (1 - self.hardness))
-        if max_noise > 0:
-            noise = np.random.randint(0, max_noise, temp.shape, dtype=np.uint8)
-            temp = cv2.subtract(temp, noise)
-        y_min = max(0, y - size)
-        y_max = min(self.height, y + size)
-        x_min = max(0, x - size)
-        x_max = min(self.width, x + size)
-        if y_min < y_max and x_min < x_max:
-            region = canvas[y_min:y_max, x_min:x_max]
-            temp_region = temp[y_min:y_max, x_min:x_max]
-            blended = cv2.addWeighted(region, 1 - eff_alpha, temp_region, eff_alpha, 0)
-            mask = np.any(temp_region != 0, axis=2)
-            region[mask] = blended[mask]
+            region[mask] = cv2.addWeighted(region[mask], 1 - eff_alpha, temp_region[mask], eff_alpha, 0)
 
     def _draw_watercolor(self, canvas, point, size):
         x, y = point
         temp = np.zeros_like(canvas)
-        for i in range(5):
-            radius = int(size * (0.5 + np.random.random()))
-            color_var = [int(max(0, min(255, c * (0.9 + np.random.random() * 0.2)))) for c in self.color]
-            cv2.circle(temp, (x, y), radius, tuple(color_var), -1)
-        k = int((1 - self.hardness) * 20)
-        if k % 2 == 0:
-            k += 1
-        if k < 1:
-            k = 1
+        # Simulate watercolor bleed/spread
+        for _ in range(3):  # Reduced from 5 to 3 for better performance
+            offset_x = int(np.random.normal(0, size * 0.3))
+            offset_y = int(np.random.normal(0, size * 0.3))
+            radius = int(size * (0.4 + np.random.random() * 0.6))
+            alpha = 0.3 + np.random.random() * 0.4 # Varying transparency
+            color_var = tuple(min(255, max(0, int(c * (0.8 + np.random.random() * 0.4)))) for c in self.color)
+            
+            # Draw semi-transparent circle with bounds checking
+            cx = max(0, min(x + offset_x, self.width - 1))
+            cy = max(0, min(y + offset_y, self.height - 1))
+            cv2.circle(temp, (cx, cy), radius, color_var, -1)
+        
+        # Soften the edges
+        k = max(1, size // 3) * 2 + 1
         temp = cv2.GaussianBlur(temp, (k, k), 0)
-        eff_alpha = self.opacity * self.flow * 0.7
-        y_min = max(0, y - size*3)
-        y_max = min(self.height, y + size*3)
-        x_min = max(0, x - size*3)
-        x_max = min(self.width, x + size*3)
+
+        # Blend onto the main canvas with proper bounds checking
+        y_min = max(0, y - size*2)
+        y_max = min(self.height, y + size*2)
+        x_min = max(0, x - size*2)
+        x_max = min(self.width, x + size*2)
+        
         if y_min < y_max and x_min < x_max:
             region = canvas[y_min:y_max, x_min:x_max]
             temp_region = temp[y_min:y_max, x_min:x_max]
-            blended = cv2.addWeighted(region, 1 - eff_alpha, temp_region, eff_alpha, 0)
-            mask = np.any(temp_region != 0, axis=2)
-            region[mask] = blended[mask]
+            
+            # Create a mask where temp_region has non-zero values
+            mask = np.any(temp_region > [0, 0, 0], axis=2)
+            
+            # Only proceed if mask has any True values
+            if np.any(mask):
+                # Safe blending with explicit shape checking
+                try:
+                    region_masked = region[mask]
+                    temp_region_masked = temp_region[mask]
+                    
+                    if region_masked.shape == temp_region_masked.shape and region_masked.size > 0:
+                        blended = cv2.addWeighted(region_masked, 0.8, temp_region_masked, 0.5, 0)
+                        region[mask] = blended
+                except Exception as e:
+                    # Fallback to simpler drawing if blending fails
+                    cv2.circle(canvas, (x, y), size, self.color, -1)
 
     def _draw_neon(self, canvas, point, size):
+        """
+        Renamed from Neon to Eraser functionality with optimized performance
+        """
         x, y = point
-        temp = np.zeros_like(canvas)
-        for i in range(3):
-            radius = int(size * (3 - i) / 3)
-            brightness = min(255, 50 * (i + 1))
-            glow_color = tuple(min(255, c + brightness) for c in self.color)
-            cv2.circle(temp, (x, y), radius, glow_color, -1)
-        k = int((1 - self.hardness) * 20)
-        if k % 2 == 0:
-            k += 1
-        if k < 1:
-            k = 1
-        temp = cv2.GaussianBlur(temp, (k, k), 0)
-        eff_alpha = self.opacity * self.flow
-        y_min = max(0, y - size*3)
-        y_max = min(self.height, y + size*3)
-        x_min = max(0, x - size*3)
-        x_max = min(self.width, x + size*3)
-        if y_min < y_max and x_min < x_max:
-            region = canvas[y_min:y_max, x_min:x_max]
-            temp_region = temp[y_min:y_max, x_min:x_max]
-            blended = cv2.addWeighted(region, 1 - eff_alpha, temp_region, eff_alpha, 0)
-            mask = np.any(temp_region != 0, axis=2)
-            region[mask] = blended[mask]
+        # Simple eraser - just draw with background color
+        cv2.circle(canvas, (x, y), size, self.background_color, -1)
 
     def _draw_pixel(self, canvas, point, size):
         x, y = point
-        pixel_size = max(1, size // 3)
+        pixel_size = max(1, size // 2) # Adjust pixel size calculation if needed
         x_grid = (x // pixel_size) * pixel_size
         y_grid = (y // pixel_size) * pixel_size
-        eff_color = tuple(min(255, int(c * self.opacity * self.flow)) for c in self.color)
+        eff_color = self.color
         cv2.rectangle(canvas, (x_grid, y_grid), (x_grid + pixel_size, y_grid + pixel_size), eff_color, -1)
 
     def _connect_points(self, canvas, p1, p2, size):
         x1, y1 = p1
         x2, y2 = p2
         dist = np.hypot(x2 - x1, y2 - y1)
-        if dist < 2:
+        if dist < 1: # Connect only if points are sufficiently far apart
             return
-        num_points = max(2, int(dist / 2))
-        for i in range(1, num_points):
+        num_points = max(2, int(dist)) # Interpolate based on distance
+        draw_method_name = f'_draw_{self.brush_type.name.lower()}'
+        draw_method = getattr(self, draw_method_name, self._draw_standard_brush)
+        for i in range(1, num_points + 1):
             t = i / num_points
             x = int((1 - t) * x1 + t * x2)
             y = int((1 - t) * y1 + t * y2)
-            if self.brush_type == BrushType.STANDARD:
-                self._draw_standard_brush(canvas, (x, y), size)
-            elif self.brush_type == BrushType.AIRBRUSH:
-                self._draw_airbrush(canvas, (x, y), size)
-            elif self.brush_type == BrushType.CALLIGRAPHY:
-                self._draw_calligraphy(canvas, (x, y), size)
-            elif self.brush_type == BrushType.MARKER:
-                self._draw_marker(canvas, (x, y), size)
-            elif self.brush_type == BrushType.PENCIL:
-                self._draw_pencil(canvas, (x, y), size)
-            elif self.brush_type == BrushType.WATERCOLOR:
-                self._draw_watercolor(canvas, (x, y), size)
-            elif self.brush_type == BrushType.NEON:
-                self._draw_neon(canvas, (x, y), size)
-            elif self.brush_type == BrushType.PIXEL:
-                self._draw_pixel(canvas, (x, y), size)
-            else:
-                self._draw_standard_brush(canvas, (x, y), size)
+            draw_method(canvas, (x, y), size)
 
     def set_color(self, color):
         self.color = color
 
     def set_brush(self, brush_type):
-        self.brush_type = brush_type
+        if isinstance(brush_type, BrushType):
+            self.brush_type = brush_type
+        else:
+            print(f"Warning: Invalid brush type {brush_type}")
 
     def set_brush_size(self, size):
-        self.brush_size = max(1, size)
-
-    def set_opacity(self, opacity):
-        self.opacity = max(0.0, min(1.0, opacity))
-
-    def set_flow(self, flow):
-        self.flow = max(0.0, min(1.0, flow))
+        self.brush_size = max(1, int(size))
 
     def set_hardness(self, hardness):
+        # Hardness might be used by some brushes, keep method signature
         self.hardness = max(0.0, min(1.0, hardness))
 
     def clear(self):
-        self.layers[self.active_layer][:] = self.background_color
-        self._save_state()
+        # Check if canvas is already clear to avoid redundant history states
+        if not np.all(self.layers[self.active_layer] == self.background_color):
+            self.layers[self.active_layer][:] = self.background_color
+            self._add_history_state(self.layers[self.active_layer].copy()) # Save cleared state
 
     def undo(self):
-        if len(self.history) > 1:
-            self.redo_stack.append(self.layers[self.active_layer].copy())
-            self.history.pop()
-            self.layers[self.active_layer] = self.history[-1].copy()
-            if len(self.redo_stack) > self.max_history_size:
-                self.redo_stack.pop(0)
+        if self.history_index > 0:
+            self.history_index -= 1
+            self.layers[self.active_layer] = self.history[self.history_index].copy()
             return True
         return False
 
     def redo(self):
-        if self.redo_stack:
-            state = self.redo_stack.pop()
-            self.history.append(self.layers[self.active_layer].copy())
-            if len(self.history) > self.max_history_size:
-                self.history.pop(0)
-            self.layers[self.active_layer] = state
+        if self.history_index < len(self.history) - 1:
+            self.history_index += 1
+            self.layers[self.active_layer] = self.history[self.history_index].copy()
             return True
         return False
 
-    def _save_state(self):
-        self.history.append(self.layers[self.active_layer].copy())
+    def _add_history_state(self, state):
+        # If we undo and then draw, clear the future redo states
+        if self.history_index < len(self.history) - 1:
+            self.history = self.history[:self.history_index + 1]
+        
+        # Add the new state
+        self.history.append(state)
+        
+        # Enforce history limit
         if len(self.history) > self.max_history_size:
             self.history.pop(0)
-        self.redo_stack = []
+            # Index remains pointing to the last element after pop(0)
+            self.history_index = len(self.history) - 1
+        else:
+            # Only increment index if we didn't pop
+            self.history_index += 1
 
     def save(self, filename):
         try:
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             cv2.imwrite(filename, self.layers[self.active_layer])
+            print(f"Canvas saved to {filename}")
             return True
         except Exception as e:
             print(f"Error saving canvas: {e}")
             return False
 
     def get_transformed_canvas(self):
+        # Return a copy to prevent external modification
         return self.layers[self.active_layer].copy()
 
     def get_performance_metrics(self):
@@ -314,10 +276,3 @@ class CanvasEngine:
             "avg_draw_time": self.avg_draw_time * 1000,
             "draw_count": self.draw_count
         }
-
-if __name__ == "__main__":
-    canvas_engine = CanvasEngine(800, 600)
-    canvas = canvas_engine.get_transformed_canvas()
-    cv2.namedWindow("Canvas Test", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Canvas Test", 800, 600)
-    drawing = False
