@@ -7,12 +7,12 @@ class GestureType(Enum):
     DRAW = 1
     SELECT = 2
     CLEAR = 3
-    # UNDO = 4 # Removed
-    # REDO = 5 # Removed - Note: REDO was never implemented as a gesture
+
+
     SAVE = 6
-    # COLOR_PICK = 7 # Removed
-    # TOOL_CHANGE = 8 # Removed
-    # TEXT_INPUT = 9 # Removed
+
+
+
 class GestureState(Enum):
     NONE = 0
     STARTED = 1

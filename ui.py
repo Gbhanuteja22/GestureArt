@@ -30,21 +30,21 @@ class UIManager:
                 "visible": False,
                 "rect": (50, 70, 300, 300),
                 "colors": [
-                    {"color": (0, 0, 0), "rect": (60, 80, 40, 40), "active": False},      # Black
-                    {"color": (255, 255, 255), "rect": (110, 80, 40, 40), "active": False}, # White
-                    {"color": (0, 0, 255), "rect": (160, 80, 40, 40), "active": False},   # Red
-                    {"color": (0, 255, 0), "rect": (210, 80, 40, 40), "active": False},   # Green
-                    {"color": (255, 0, 0), "rect": (260, 80, 40, 40), "active": False},   # Blue
-                    {"color": (0, 255, 255), "rect": (60, 130, 40, 40), "active": False}, # Yellow
-                    {"color": (255, 0, 255), "rect": (110, 130, 40, 40), "active": False}, # Magenta
-                    {"color": (255, 255, 0), "rect": (160, 130, 40, 40), "active": False}, # Cyan
-                    {"color": (128, 0, 0), "rect": (210, 130, 40, 40), "active": False},  # Dark blue
-                    {"color": (0, 128, 0), "rect": (260, 130, 40, 40), "active": False},  # Dark green
-                    {"color": (0, 0, 128), "rect": (60, 180, 40, 40), "active": False},   # Dark red
-                    {"color": (128, 128, 0), "rect": (110, 180, 40, 40), "active": False}, # Dark cyan
-                    {"color": (128, 0, 128), "rect": (160, 180, 40, 40), "active": False}, # Dark magenta
-                    {"color": (0, 128, 128), "rect": (210, 180, 40, 40), "active": False}, # Dark yellow
-                    {"color": (128, 128, 128), "rect": (260, 180, 40, 40), "active": False}, # Gray
+                    {"color": (0, 0, 0), "rect": (60, 80, 40, 40), "active": False},
+                    {"color": (255, 255, 255), "rect": (110, 80, 40, 40), "active": False},
+                    {"color": (0, 0, 255), "rect": (160, 80, 40, 40), "active": False},
+                    {"color": (0, 255, 0), "rect": (210, 80, 40, 40), "active": False},
+                    {"color": (255, 0, 0), "rect": (260, 80, 40, 40), "active": False},
+                    {"color": (0, 255, 255), "rect": (60, 130, 40, 40), "active": False},
+                    {"color": (255, 0, 255), "rect": (110, 130, 40, 40), "active": False},
+                    {"color": (255, 255, 0), "rect": (160, 130, 40, 40), "active": False},
+                    {"color": (128, 0, 0), "rect": (210, 130, 40, 40), "active": False},
+                    {"color": (0, 128, 0), "rect": (260, 130, 40, 40), "active": False},
+                    {"color": (0, 0, 128), "rect": (60, 180, 40, 40), "active": False},
+                    {"color": (128, 128, 0), "rect": (110, 180, 40, 40), "active": False},
+                    {"color": (128, 0, 128), "rect": (160, 180, 40, 40), "active": False},
+                    {"color": (0, 128, 128), "rect": (210, 180, 40, 40), "active": False},
+                    {"color": (128, 128, 128), "rect": (260, 180, 40, 40), "active": False},
                 ],
                 "sliders": [
                     {"name": "R", "rect": (60, 230, 240, 20), "value": 0, "active": False},
@@ -56,17 +56,17 @@ class UIManager:
             },
             UIElement.BRUSH_SELECTOR: {
                 "visible": False,
-                "rect": (50, 70, 300, 270), # Adjusted height
+                "rect": (50, 70, 300, 270),
                 "brushes": [
-                    # Arranged in a 2x2 grid
+
                     {"name": "Standard",    "rect": (60, 100, 120, 30), "active": True},
                     {"name": "Calligraphy", "rect": (190, 100, 120, 30), "active": False},
                     {"name": "Eraser",      "rect": (60, 140, 120, 30), "active": False},
                     {"name": "Pixel",       "rect": (190, 140, 120, 30), "active": False}
-                    # {"name": "Watercolor", "rect": (190, 140, 120, 30), "active": False}, # Removed
+
                 ],
                 "sliders": [
-                    # Moved slider down to accommodate grid
+
                     {"name": "Size", "rect": (60, 190, 240, 20), "value": 15, "min": 1, "max": 50, "active": False},
                 ]
             },
@@ -79,9 +79,9 @@ class UIManager:
                     "Gestures:",
                     "- Draw: Index finger up",
                     "- Select: Index and middle fingers up"                    "- Clear: All fingers up",
-                    # "- Undo: Thumb and index form a \'C\'", # Removed
-                    # "- Color Pick: Index and pinky up", # Removed
-                    # "- Tool Change: Ring and pinky up", # Removed
+
+
+
                     "- Save: Thumb, index, and pinky up",
                     "",
                     "Keyboard Shortcuts:",
@@ -110,7 +110,7 @@ class UIManager:
         }
         self.gesture_indicator = {
             "visible": True,
-            "rect": (self.width - 375 - 10, 70, 375, 30) # Moved to top-right, below header
+            "rect": (self.width - 375 - 10, 70, 375, 30)
         }
         self.status_bar = {
             "visible": True,
@@ -338,7 +338,7 @@ class UIManager:
                          (rect[0] + rect[2], rect[1] + rect[3]), 
                          (100, 100, 100), 2)
             cv2.putText(result, f"Gesture: {gesture_info}", (rect[0] + 10, rect[1] + 20), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1, cv2.LINE_AA) # Hacker green text
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1, cv2.LINE_AA)
         if self.status_bar["visible"]:
             rect = self.status_bar["rect"]
             cv2.rectangle(result, (rect[0], rect[1]), 

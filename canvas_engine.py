@@ -6,11 +6,11 @@ from enum import Enum
 
 class BrushType(Enum):
     STANDARD = 0
-    # AIRBRUSH = 1 # Removed
+
     CALLIGRAPHY = 2
     MARKER = 3
-    # WATERCOLOR = 5 # Removed
-    NEON = 6 # Internally represents Eraser
+
+    NEON = 6
     PIXEL = 7
 
 class CanvasEngine:
@@ -27,12 +27,12 @@ class CanvasEngine:
         self.hardness = 0.5
         self.prev_point = None
         self.history = []
-        self.history_index = -1 # Points to the current state in history
+        self.history_index = -1
         self.max_history_size = 20
-        self.layers = [np.ones((height, width, 3), dtype=np.uint8)] # Start with one layer
+        self.layers = [np.ones((height, width, 3), dtype=np.uint8)]
         self.layers[0][:] = background_color
-        self.active_layer = 0 # Initialize active_layer BEFORE using it
-        self._add_history_state(self.layers[self.active_layer].copy()) # Save initial state
+        self.active_layer = 0
+        self._add_history_state(self.layers[self.active_layer].copy())
         self.last_draw_time = 0
         self.draw_count = 0
         self.avg_draw_time = 0
@@ -40,8 +40,8 @@ class CanvasEngine:
     def draw(self, point, pressure=1.0, is_drawing=True):
         start_time = time.time()
         if point is None:
-            # Save state only when the drawing stroke ends (is_drawing is False)
-            if self.prev_point is not None and not is_drawing: # Check if there was a stroke
+
+            if self.prev_point is not None and not is_drawing:
                  self._add_history_state(self.layers[self.active_layer].copy())
             self.prev_point = None
             return
@@ -54,7 +54,7 @@ class CanvasEngine:
             effective_size = 1
 
         canvas = self.layers[self.active_layer]
-        # Dynamically call the correct drawing method based on brush_type
+
         draw_method_name = f'_draw_{self.brush_type.name.lower()}'
         draw_method = getattr(self, draw_method_name, self._draw_standard_brush)
         draw_method(canvas, (x, y), effective_size)
@@ -90,7 +90,7 @@ class CanvasEngine:
 
     def _draw_marker(self, canvas, point, size):
         x, y = point
-        # Marker effect: slightly transparent overlay
+
         eff_alpha = 0.7 
         temp = np.zeros_like(canvas)
         cv2.circle(temp, (x, y), size, self.color, -1)
@@ -109,12 +109,12 @@ class CanvasEngine:
         Renamed from Neon to Eraser functionality with optimized performance
         """
         x, y = point
-        # Simple eraser - just draw with background color
+
         cv2.circle(canvas, (x, y), size, self.background_color, -1)
 
     def _draw_pixel(self, canvas, point, size):
         x, y = point
-        pixel_size = max(1, size // 2) # Adjust pixel size calculation if needed
+        pixel_size = max(1, size // 2)
         x_grid = (x // pixel_size) * pixel_size
         y_grid = (y // pixel_size) * pixel_size
         eff_color = self.color
@@ -124,9 +124,9 @@ class CanvasEngine:
         x1, y1 = p1
         x2, y2 = p2
         dist = np.hypot(x2 - x1, y2 - y1)
-        if dist < 1: # Connect only if points are sufficiently far apart
+        if dist < 1:
             return
-        num_points = max(2, int(dist)) # Interpolate based on distance
+        num_points = max(2, int(dist))
         draw_method_name = f'_draw_{self.brush_type.name.lower()}'
         draw_method = getattr(self, draw_method_name, self._draw_standard_brush)
         for i in range(1, num_points + 1):
@@ -148,14 +148,14 @@ class CanvasEngine:
         self.brush_size = max(1, int(size))
 
     def set_hardness(self, hardness):
-        # Hardness might be used by some brushes, keep method signature
+
         self.hardness = max(0.0, min(1.0, hardness))
 
     def clear(self):
-        # Check if canvas is already clear to avoid redundant history states
+
         if not np.all(self.layers[self.active_layer] == self.background_color):
             self.layers[self.active_layer][:] = self.background_color
-            self._add_history_state(self.layers[self.active_layer].copy()) # Save cleared state
+            self._add_history_state(self.layers[self.active_layer].copy())
 
     def undo(self):
         if self.history_index > 0:
@@ -172,20 +172,20 @@ class CanvasEngine:
         return False
 
     def _add_history_state(self, state):
-        # If we undo and then draw, clear the future redo states
+
         if self.history_index < len(self.history) - 1:
             self.history = self.history[:self.history_index + 1]
         
-        # Add the new state
+
         self.history.append(state)
         
-        # Enforce history limit
+
         if len(self.history) > self.max_history_size:
             self.history.pop(0)
-            # Index remains pointing to the last element after pop(0)
+
             self.history_index = len(self.history) - 1
         else:
-            # Only increment index if we didn't pop
+
             self.history_index += 1
 
     def save(self, filename):
@@ -199,7 +199,7 @@ class CanvasEngine:
             return False
 
     def get_transformed_canvas(self):
-        # Return a copy to prevent external modification
+
         return self.layers[self.active_layer].copy()
 
     def get_performance_metrics(self):
@@ -208,3 +208,4 @@ class CanvasEngine:
             "avg_draw_time": self.avg_draw_time * 1000,
             "draw_count": self.draw_count
         }
+    
