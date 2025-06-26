@@ -3,16 +3,12 @@ import numpy as np
 import os
 import time
 from enum import Enum
-
 class BrushType(Enum):
     STANDARD = 0
-
     CALLIGRAPHY = 2
     MARKER = 3
-
     NEON = 6
     PIXEL = 7
-
 class CanvasEngine:
     def __init__(self, width=1280, height=720, background_color=(255, 255, 255)):
         self.width = width

@@ -58,12 +58,10 @@ class UIManager:
                 "visible": False,
                 "rect": (50, 70, 300, 270),
                 "brushes": [
-
                     {"name": "Standard",    "rect": (60, 100, 120, 30), "active": True},
-                    {"name": "Calligraphy", "rect": (190, 100, 120, 30), "active": False},
+                    {"name": "Stroke", "rect": (190, 100, 120, 30), "active": False},
                     {"name": "Eraser",      "rect": (60, 140, 120, 30), "active": False},
                     {"name": "Pixel",       "rect": (190, 140, 120, 30), "active": False}
-
                 ],
                 "sliders": [
 
@@ -78,12 +76,9 @@ class UIManager:
                     "",
                     "Gestures:",
                     "- Draw: Index finger up",
-                    "- Select: Index and middle fingers up"                    "- Clear: All fingers up",
-
-
-
-                    "- Save: Thumb, index, and pinky up",
-                    "",
+                    "- Select: Index and middle fingers up"                   
+                    "- Clear: All fingers up",
+                    "- Save: Index, and pinky up",
                     "Keyboard Shortcuts:",
                     "- ESC: Exit application",
                     "- C: Clear canvas",
